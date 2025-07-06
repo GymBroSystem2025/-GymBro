@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +18,17 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Verificar se o usuário já está logado
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        navigate("/dashboard");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -36,7 +46,7 @@ const Auth = () => {
           title: "Login realizado com sucesso!",
           description: "Bem-vindo de volta ao GymBro",
         });
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast({
@@ -161,7 +171,7 @@ const Auth = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full fitness-gradient text-white" 
+                    className="w-full btn-gradient hover:opacity-90 transition-opacity" 
                     disabled={isLoading}
                   >
                     {isLoading ? "Entrando..." : "Entrar"}
@@ -214,7 +224,7 @@ const Auth = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full fitness-gradient text-white" 
+                    className="w-full btn-gradient hover:opacity-90 transition-opacity" 
                     disabled={isLoading}
                   >
                     {isLoading ? "Criando conta..." : "Criar Conta"}

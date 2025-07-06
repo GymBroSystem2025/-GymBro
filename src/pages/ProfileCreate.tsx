@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,24 +11,48 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-const ProfileCreate = () => {
+// Adicionar props para edição
+type ProfileCreateProps = {
+  initialData?: any;
+  isEditMode?: boolean;
+};
+
+const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImages, setProfileImages] = useState<string[]>(initialData?.images || []);
   const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    bio: "",
-    goals: [] as string[],
-    gym: "",
-    availableDays: [] as string[],
-    timePreference: "",
-    lookingFor: "both",
-    experience: "",
+    name: initialData?.name || "",
+    age: initialData?.age || "",
+    bio: initialData?.bio || "",
+    goals: initialData?.goals || [],
+    gym: initialData?.gym || "",
+    availableDays: initialData?.availableDays || [],
+    timePreference: initialData?.timePreference || "",
+    lookingFor: initialData?.lookingFor || "both",
+    experience: initialData?.experience || "",
   });
 
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (initialData) {
+      setProfileImages(initialData.images || []);
+      setFormData({
+        name: initialData.name || "",
+        age: initialData.age || "",
+        bio: initialData.bio || "",
+        goals: initialData.goals || [],
+        gym: initialData.gym || "",
+        availableDays: initialData.availableDays || [],
+        timePreference: initialData.timePreference || "",
+        lookingFor: initialData.lookingFor || "both",
+        experience: initialData.experience || "",
+      });
+    }
+  }, [initialData]);
 
   const fitnessGoals = [
     "Emagrecimento",
@@ -53,14 +76,27 @@ const ProfileCreate = () => {
   ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (profileImages.length + files.length > 5) {
+      toast({
+        title: "Limite de fotos atingido",
+        description: "Você pode adicionar até 5 fotos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    files.forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
+      reader.onload = (ev) => {
+        setProfileImages((prev) => [...prev, ev.target?.result as string]);
       };
       reader.readAsDataURL(file);
-    }
+    });
+  };
+
+  const removeImage = (idx: number) => {
+    setProfileImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const toggleGoal = (goal: string) => {
@@ -86,23 +122,75 @@ const ProfileCreate = () => {
     setIsLoading(true);
 
     try {
-      // Validação básica
       if (!formData.name || formData.goals.length === 0) {
         throw new Error("Nome e pelo menos um objetivo são obrigatórios");
       }
 
-      // Aqui você salvaria no Supabase
-      // await saveProfile(formData, profileImage);
+      // Upload das imagens para o Supabase Storage
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("Usuário não autenticado");
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < profileImages.length; i++) {
+        const base64 = profileImages[i];
+        // Converter base64 para Blob
+        const res = await fetch(base64);
+        const blob = await res.blob();
+        const filePath = `profile-photos/${user.id}/${Date.now()}-${i}.png`;
+        const { error: uploadError } = await supabase.storage.from("profile-photos").upload(filePath, blob, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: publicUrlData } = supabase.storage.from("profile-photos").getPublicUrl(filePath);
+        uploadedUrls.push(publicUrlData.publicUrl);
+      }
 
-      toast({
-        title: "Perfil criado com sucesso!",
-        description: "Agora você pode começar a encontrar parceiros de treino",
-      });
-
-      navigate("/matches");
+      if (isEditMode) {
+        // UPDATE apenas se já existe
+        const { error: updateError } = await supabase.from("profiles").update({
+          full_name: formData.name,
+          name: formData.name,
+          age: formData.age ? Number(formData.age) : null,
+          bio: formData.bio,
+          objectives: formData.goals,
+          availability: formData.availableDays,
+          location: formData.gym,
+          experience_level: formData.experience,
+          gym: formData.gym,
+          images: uploadedUrls,
+          avatar_url: uploadedUrls[0] || null,
+          updated_at: new Date().toISOString(),
+        }).eq("id", user.id);
+        if (updateError) throw updateError;
+        toast({
+          title: "Perfil atualizado com sucesso!",
+          description: "Suas alterações foram salvas.",
+        });
+      } else {
+        // INSERT apenas se não existe
+        const { error: insertError } = await supabase.from("profiles").insert({
+          id: user.id,
+          email: user.email,
+          full_name: formData.name,
+          name: formData.name,
+          age: formData.age ? Number(formData.age) : null,
+          bio: formData.bio,
+          objectives: formData.goals,
+          availability: formData.availableDays,
+          location: formData.gym,
+          experience_level: formData.experience,
+          gym: formData.gym,
+          images: uploadedUrls,
+          avatar_url: uploadedUrls[0] || null,
+          updated_at: new Date().toISOString(),
+        });
+        if (insertError) throw insertError;
+        toast({
+          title: "Perfil criado com sucesso!",
+          description: "Agora você pode começar a encontrar parceiros de treino",
+        });
+      }
+      navigate("/dashboard");
     } catch (error: any) {
       toast({
-        title: "Erro ao criar perfil",
+        title: isEditMode ? "Erro ao atualizar perfil" : "Erro ao criar perfil",
         description: error.message,
         variant: "destructive",
       });
@@ -126,34 +214,49 @@ const ProfileCreate = () => {
               Informações Básicas
             </CardTitle>
             <CardDescription>
-              Essas informações ajudarão a encontrar os melhores matches para você
+              Essas informações ajudarão a encontrar os melhores parceiros de treino para você
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Foto de Perfil */}
+              {/* Fotos de Perfil */}
               <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src={profileImage || ""} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                    {formData.name ? formData.name[0].toUpperCase() : <User className="h-8 w-8" />}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    <Button variant="outline" size="sm" className="flex items-center gap-2" type="button">
-                      <Upload className="h-4 w-4" />
-                      Adicionar Foto
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {profileImages.map((img, idx) => (
+                    <div key={idx} className="relative group">
+                      <Avatar className="w-20 h-20">
+                        <AvatarImage src={img} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                          <User className="h-8 w-8" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <button
+                        type="button"
+                        className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity z-10"
+                        onClick={() => removeImage(idx)}
+                        title="Remover foto"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {profileImages.length < 5 && (
+                    <Button asChild variant="outline" size="sm" className="flex items-center gap-2 h-20 w-20 justify-center">
+                      <label htmlFor="image-upload" className="cursor-pointer m-0 flex flex-col items-center justify-center w-full h-full">
+                        <Upload className="h-6 w-6 mb-1" />
+                        <span className="text-xs">Adicionar</span>
+                      </label>
                     </Button>
-                  </Label>
-                  <Input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
+                  )}
                 </div>
+                <Input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
               </div>
 
               {/* Nome e Idade */}
@@ -298,7 +401,7 @@ const ProfileCreate = () => {
 
               <Button 
                 type="submit" 
-                className="w-full fitness-gradient text-white" 
+                className="w-full btn-gradient hover:opacity-90 transition-opacity" 
                 disabled={isLoading}
               >
                 {isLoading ? "Criando perfil..." : "Criar Perfil"}
