@@ -27,12 +27,33 @@ function isInStandaloneMode() {
 
 export default function App() {
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  // Para swipe
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isIos() && !isInStandaloneMode()) {
+    if (isIos() && !isInStandaloneMode() && !sessionStorage.getItem('hideIosInstallBanner')) {
       setShowInstallGuide(true);
     }
   }, []);
+
+  const closeBanner = () => {
+    setShowInstallGuide(false);
+    sessionStorage.setItem('hideIosInstallBanner', '1');
+  };
+
+  // Função para swipe
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX !== null) {
+      const diff = e.touches[0].clientX - touchStartX;
+      if (Math.abs(diff) > 60) {
+        closeBanner();
+      }
+    }
+  };
+  const handleTouchEnd = () => setTouchStartX(null);
 
   return (
     <>
@@ -57,8 +78,22 @@ export default function App() {
           </BrowserRouter>
         </TooltipProvider>
         {showInstallGuide && (
-          <div style={{position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0A1A2F', color: '#fff', padding: 16, zIndex: 9999, textAlign: 'center'}}>
-            Para instalar o app no iOS, toque em <span style={{fontWeight: 'bold'}}>[Compartilhar]</span> e depois em <span style={{fontWeight: 'bold'}}>[Adicionar à Tela de Início]</span>.
+          <div
+            style={{position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0A1A2F', color: '#fff', padding: 16, zIndex: 9999, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <span style={{flex: 1}}>
+              Para instalar o app no iOS, toque em <span style={{fontWeight: 'bold'}}>[Compartilhar]</span> e depois em <span style={{fontWeight: 'bold'}}>[Adicionar à Tela de Início]</span>.
+            </span>
+            <button
+              onClick={closeBanner}
+              style={{marginLeft: 16, background: 'transparent', border: 'none', color: '#fff', fontSize: 24, cursor: 'pointer'}}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
           </div>
         )}
       </QueryClientProvider>
