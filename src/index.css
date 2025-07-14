@@ -36,6 +36,8 @@
     --fitness-primary: 262 83% 58%;
     --fitness-secondary: 225 73% 57%;
     --fitness-accent: 142 76% 36%;
+    --fitness-dark: 220 40% 15%;
+    --fitness-glow: 262 100% 80%;
   }
 
   .dark {
@@ -71,21 +73,40 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(var(--fitness-dark)), hsl(var(--fitness-primary)) 60%, hsl(var(--fitness-secondary)) 100%);
+    color: hsl(var(--foreground));
     font-family: "Inter", sans-serif;
+    min-height: 100vh;
   }
 }
 
 @layer components {
   .text-gradient {
-    @apply bg-gradient-to-r from-fitness-primary to-fitness-secondary bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-fitness-primary to-fitness-secondary bg-clip-text text-transparent drop-shadow-lg;
   }
   
   .btn-gradient {
-    @apply bg-gradient-to-r from-fitness-primary to-fitness-secondary text-white;
+    @apply bg-gradient-to-r from-fitness-primary to-fitness-secondary text-white shadow-lg hover:from-fitness-secondary hover:to-fitness-primary transition-all duration-300;
+    box-shadow: 0 2px 16px 0 hsl(var(--fitness-primary) / 0.25);
   }
   
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-2 border-fitness-primary/30 bg-white/90 backdrop-blur-lg;
+  }
+  .card-glow {
+    box-shadow: 0 0 24px 0 hsl(var(--fitness-glow) / 0.5), 0 2px 16px 0 hsl(var(--fitness-primary) / 0.15);
+    border: 2px solid hsl(var(--fitness-primary) / 0.2);
+    background: linear-gradient(135deg, #fff 80%, hsl(var(--fitness-primary) / 0.08));
+  }
+  .section-dark {
+    background: linear-gradient(135deg, hsl(var(--fitness-dark)), hsl(var(--fitness-primary) / 0.7));
+    color: #fff;
+  }
+  .section-light {
+    background: linear-gradient(135deg, #fff, hsl(var(--fitness-secondary) / 0.08));
+    color: hsl(var(--fitness-dark));
+  }
+  .glow {
+    text-shadow: 0 0 8px hsl(var(--fitness-primary) / 0.7), 0 2px 8px hsl(var(--fitness-secondary) / 0.3);
   }
 }
