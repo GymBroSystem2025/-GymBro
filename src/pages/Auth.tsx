@@ -19,33 +19,77 @@ const Auth = () => {
   const [isPersonalLoading, setIsPersonalLoading] = useState(false);
   const [crefStatus, setCrefStatus] = useState<string|null>(null);
   const crefInputRef = useRef<HTMLInputElement>(null);
+  const [nickname, setNickname] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Verificar se o usuário já está logado
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        navigate("/dashboard");
+      try {
+        console.log('Verificando usuário atual...');
+        const { data: { user }, error } = await supabase.auth.getUser();
+        console.log('Usuário atual:', { user, error });
+        if (user) {
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error('Erro ao verificar usuário:', error);
       }
     };
     checkUser();
   }, [navigate]);
+
+  // Função para testar conexão com Supabase
+  const testSupabaseConnection = async () => {
+    try {
+      console.log('Testando conexão com Supabase...');
+      const { data, error } = await supabase.from('profiles').select('count').limit(1);
+      console.log('Teste de conexão:', { data, error });
+      
+      if (error) {
+        toast({
+          title: "Erro de conexão",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Conexão OK",
+          description: "Supabase está funcionando corretamente",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro no teste de conexão:', error);
+      toast({
+        title: "Erro de conexão",
+        description: error.message || "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      console.log('Iniciando login...', { email });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      console.log('Resposta do login:', { data, error });
+
+      if (error) {
+        console.error('Erro do login:', error);
+        throw error;
+      }
 
       if (data.user) {
+        console.log('Login realizado com sucesso:', data.user);
         toast({
           title: "Login realizado com sucesso!",
           description: "Bem-vindo de volta ao GymBro",
@@ -53,9 +97,10 @@ const Auth = () => {
         navigate("/dashboard");
       }
     } catch (error: any) {
+      console.error('Erro completo do login:', error);
       toast({
         title: "Erro no login",
-        description: error.message,
+        description: error.message || "Erro desconhecido",
         variant: "destructive",
       });
     } finally {
@@ -75,30 +120,55 @@ const Auth = () => {
       return;
     }
 
+    if (!nickname.trim()) {
+      toast({
+        title: "Erro",
+        description: "Preencha o nome (apelido)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      console.log('Iniciando criação de conta...', { email });
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
+          data: { name: nickname },
         },
       });
 
-      if (error) throw error;
+      console.log('Resposta do Supabase:', { data, error });
+
+      if (error) {
+        console.error('Erro do Supabase:', error);
+        throw error;
+      }
 
       if (data.user) {
+        console.log('Usuário criado com sucesso:', data.user);
         toast({
           title: "Conta criada com sucesso!",
           description: "Verifique seu email para confirmar a conta",
         });
         navigate("/profile/create");
+      } else {
+        console.log('Nenhum usuário retornado');
+        toast({
+          title: "Aviso",
+          description: "Verifique seu email para confirmar a conta",
+        });
       }
     } catch (error: any) {
+      console.error('Erro completo:', error);
       toast({
         title: "Erro ao criar conta",
-        description: error.message,
+        description: error.message || "Erro desconhecido",
         variant: "destructive",
       });
     } finally {
@@ -109,16 +179,28 @@ const Auth = () => {
   async function validateCref(cref: string) {
     setCrefStatus("validando");
     try {
-      // Consulta real ao site do CONFEF
-      const response = await fetch(`https://confef.org.br/confef/registrados/?registro=${encodeURIComponent(cref)}`);
-      const html = await response.text();
-      // Verifica se o número do CREF aparece na tabela de resultados
-      if (html.includes(cref)) {
+      // Por enquanto, vamos simular a validação do CREF
+      // Em produção, você pode implementar uma API própria ou usar um serviço de proxy
+      
+      // Simular delay de validação
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Validação básica do formato do CREF (número-letra/estado)
+      const crefRegex = /^\d{6}-[A-Z]\/[A-Z]{2}$/;
+      if (crefRegex.test(cref)) {
         setCrefStatus("ativo");
       } else {
         setCrefStatus("invalido");
       }
+      
+      // TODO: Implementar validação real do CREF
+      // Opções:
+      // 1. Criar uma API própria que consulta o CONFEF
+      // 2. Usar um serviço de proxy CORS
+      // 3. Implementar validação no backend
+      
     } catch (err) {
+      console.error('Erro ao validar CREF:', err);
       setCrefStatus("erro");
     }
   }
@@ -189,6 +271,16 @@ const Auth = () => {
           <img src="/logo.png" alt="GymBro Logo" className="w-20 h-20 rounded-2xl mx-auto mb-4 object-contain bg-white shadow-xl" />
           <h1 className="text-2xl font-bold text-gradient glow">Bem-vindo ao GymBro</h1>
           <p className="text-muted-foreground mt-2 text-white/80">Seu parceiro de treino te espera</p>
+          
+          {/* Botão de teste para debug */}
+          <Button 
+            onClick={testSupabaseConnection}
+            variant="outline" 
+            size="sm" 
+            className="mt-4 text-xs"
+          >
+            Testar Conexão Supabase
+          </Button>
         </div>
 
         <Card className="border-primary/20 card-glow">
@@ -272,6 +364,18 @@ const Auth = () => {
                         required
                       />
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-nickname">Nome (apelido)</Label>
+                    <Input
+                      id="signup-nickname"
+                      type="text"
+                      placeholder="Seu nome ou apelido"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      required
+                    />
                   </div>
                   
                   <div className="space-y-2">

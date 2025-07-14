@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import ProfileEdit from "./pages/ProfileEdit";
 import Partners from "./pages/Partners";
 import Trainers from "./pages/Trainers";
+import Match from "./pages/Match";
 import { useEffect, useState } from 'react';
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="dashboard" element={<Chat />} />
                 <Route path="partners" element={<Partners />} />
                 <Route path="trainers" element={<Trainers />} />
+                <Route path="match" element={<Match />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

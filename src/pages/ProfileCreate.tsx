@@ -21,38 +21,48 @@ type ProfileCreateProps = {
 
 const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(!isEditMode || !!initialData);
   const [profileImages, setProfileImages] = useState<string[]>(initialData?.images || []);
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     age: initialData?.age || "",
     bio: initialData?.bio || "",
-    goals: initialData?.goals || [],
+    goals: initialData?.objectives || [], // garantir que é 'objectives'
     gym: initialData?.gym || "",
-    availableDays: initialData?.availableDays || [],
-    timePreference: initialData?.timePreference || "",
+    availableDays: initialData?.availability || [], // garantir que é 'availability'
+    timePreferences: initialData?.time_preferences || [""], // array
     lookingFor: initialData?.lookingFor || "both",
-    experience: initialData?.experience || "",
+    experience: initialData?.experience_level || "",
   });
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    if (isEditMode && !initialData) {
+      setIsReady(false);
+      return;
+    }
     if (initialData) {
       setProfileImages(initialData.images || []);
       setFormData({
         name: initialData.name || "",
         age: initialData.age || "",
         bio: initialData.bio || "",
-        goals: initialData.goals || [],
+        goals: initialData.objectives || [], // garantir que é 'objectives'
         gym: initialData.gym || "",
-        availableDays: initialData.availableDays || [],
-        timePreference: initialData.timePreference || "",
+        availableDays: initialData.availability || [], // garantir que é 'availability'
+        timePreferences: initialData.time_preferences || [""], // garantir que é 'time_preferences'
         lookingFor: initialData.lookingFor || "both",
-        experience: initialData.experience || "",
+        experience: initialData.experience_level || "",
       });
+      setIsReady(true);
     }
-  }, [initialData]);
+  }, [initialData, isEditMode]);
+
+  if (isEditMode && !isReady) {
+    return <div className="text-center py-12 text-muted-foreground">Carregando dados do perfil...</div>;
+  }
 
   const fitnessGoals = [
     "Emagrecimento",
@@ -149,9 +159,9 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
           name: formData.name,
           age: formData.age ? Number(formData.age) : null,
           bio: formData.bio,
-          objectives: formData.goals,
-          availability: formData.availableDays,
-          location: formData.gym,
+          objectives: formData.goals, // garantir que é 'objectives'
+          availability: formData.availableDays, // garantir que é 'availability'
+          time_preferences: formData.timePreferences, // garantir que é 'time_preferences'
           experience_level: formData.experience,
           gym: formData.gym,
           images: uploadedUrls,
@@ -174,7 +184,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
           bio: formData.bio,
           objectives: formData.goals,
           availability: formData.availableDays,
-          location: formData.gym,
+          time_preferences: formData.timePreferences,
           experience_level: formData.experience,
           gym: formData.gym,
           images: uploadedUrls,
@@ -269,6 +279,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     required
+                    disabled={isLoading || !isReady}
                   />
                 </div>
                 <div className="space-y-2">
@@ -279,6 +290,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                     placeholder="25"
                     value={formData.age}
                     onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+                    disabled={isLoading || !isReady}
                   />
                 </div>
               </div>
@@ -292,6 +304,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                   value={formData.bio}
                   onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                   rows={3}
+                  disabled={isLoading || !isReady}
                 />
               </div>
 
@@ -322,6 +335,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                     placeholder="Nome da academia ou região"
                     value={formData.gym}
                     onChange={(e) => setFormData(prev => ({ ...prev, gym: e.target.value }))}
+                    disabled={isLoading || !isReady}
                   />
                 </div>
                 <div className="space-y-2">
@@ -329,6 +343,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                   <Select 
                     value={formData.experience} 
                     onValueChange={(value) => setFormData(prev => ({ ...prev, experience: value }))}
+                    disabled={isLoading || !isReady}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
@@ -353,6 +368,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                         id={day}
                         checked={formData.availableDays.includes(day)}
                         onCheckedChange={() => toggleDay(day)}
+                        disabled={isLoading || !isReady}
                       />
                       <Label htmlFor={day} className="text-sm cursor-pointer">
                         {day.slice(0, 3)}
@@ -362,23 +378,39 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                 </div>
               </div>
 
-              {/* Preferência de Horário */}
+              {/* Horários Preferidos */}
               <div className="space-y-2">
-                <Label htmlFor="timePreference">Horário Preferido</Label>
-                <Select 
-                  value={formData.timePreference} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, timePreference: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Quando prefere treinar?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Manhã (6h-12h)</SelectItem>
-                    <SelectItem value="afternoon">Tarde (12h-18h)</SelectItem>
-                    <SelectItem value="evening">Noite (18h-22h)</SelectItem>
-                    <SelectItem value="flexible">Flexível</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Horários Preferidos</Label>
+                {formData.timePreferences.map((h, idx) => (
+                  <div key={idx} className="flex items-center gap-2 mb-1">
+                    <Input
+                      type="time"
+                      value={h}
+                      onChange={e => {
+                        const arr = [...formData.timePreferences];
+                        arr[idx] = e.target.value;
+                        setFormData(prev => ({ ...prev, timePreferences: arr }));
+                      }}
+                      disabled={isLoading || !isReady}
+                      className="w-32"
+                    />
+                    {formData.timePreferences.length > 1 && (
+                      <Button type="button" size="icon" variant="ghost" onClick={() => {
+                        setFormData(prev => ({ ...prev, timePreferences: prev.timePreferences.filter((_, i) => i !== idx) }));
+                      }}>
+                        <span className="text-lg">×</span>
+                      </Button>
+                    )}
+                    {idx === formData.timePreferences.length - 1 && (
+                      <Button type="button" size="icon" variant="outline" onClick={() => {
+                        setFormData(prev => ({ ...prev, timePreferences: [...prev.timePreferences, ""] }));
+                      }}>
+                        <span className="text-lg">+</span>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">Adicione todos os horários que prefere treinar</p>
               </div>
 
               {/* O que está procurando */}
@@ -387,6 +419,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                 <Select 
                   value={formData.lookingFor} 
                   onValueChange={(value) => setFormData(prev => ({ ...prev, lookingFor: value }))}
+                  disabled={isLoading || !isReady}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -402,9 +435,9 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
               <Button 
                 type="submit" 
                 className="w-full btn-gradient hover:opacity-90 transition-opacity" 
-                disabled={isLoading}
+                disabled={isLoading || !isReady}
               >
-                {isLoading ? "Criando perfil..." : "Criar Perfil"}
+                {isLoading ? (isEditMode ? "Salvando perfil..." : "Criando perfil...") : "Salvar Perfil"}
               </Button>
             </form>
           </CardContent>

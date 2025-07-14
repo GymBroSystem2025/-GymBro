@@ -92,14 +92,9 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
                 <>
-                  <Link to="/dashboard">
+                  <Link to="/match">
                     <Button size="lg" className="btn-gradient hover:opacity-90 transition-opacity shadow-xl">
-                      Ver Dashboard
-                    </Button>
-                  </Link>
-                  <Link to="/profile/edit">
-                    <Button size="lg" variant="outline" className="border-primary hover:bg-primary/10">
-                      Editar Perfil
+                      Encontrar Parceiro(a)
                     </Button>
                   </Link>
                 </>

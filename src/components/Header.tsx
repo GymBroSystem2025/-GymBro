@@ -53,14 +53,14 @@ export function Header() {
           <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
             Início
           </Link>
-          <Link to="/partners" className="text-sm font-medium hover:text-primary transition-colors">
-            Parceiros(as)
+          <Link to="/profile/edit" className="text-sm font-medium hover:text-primary transition-colors">
+            Editar Perfil
           </Link>
           <Link to="/trainers" className="text-sm font-medium hover:text-primary transition-colors">
             Personal Trainers
           </Link>
           <Link to="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">
-            Chat
+            Marcar Treino
           </Link>
         </nav>
 
