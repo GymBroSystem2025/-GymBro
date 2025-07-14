@@ -106,7 +106,7 @@ const Index = () => {
                     </Button>
                   </Link>
                   <Link to="/profile/create">
-                    <Button size="lg" variant="outline" className="border-primary hover:bg-primary/10">
+                    <Button size="lg" className="btn-gradient hover:opacity-90 transition-opacity">
                       Criar Perfil
                     </Button>
                   </Link>

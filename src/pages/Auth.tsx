@@ -272,15 +272,6 @@ const Auth = () => {
           <h1 className="text-2xl font-bold text-gradient glow">Bem-vindo ao GymBro</h1>
           <p className="text-muted-foreground mt-2 text-white/80">Seu parceiro de treino te espera</p>
           
-          {/* Botão de teste para debug */}
-          <Button 
-            onClick={testSupabaseConnection}
-            variant="outline" 
-            size="sm" 
-            className="mt-4 text-xs"
-          >
-            Testar Conexão Supabase
-          </Button>
         </div>
 
         <Card className="border-primary/20 card-glow">
