@@ -82,7 +82,7 @@ const Match = () => {
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [showFarProfiles, setShowFarProfiles] = useState(false);
   const [extraRadius, setExtraRadius] = useState(50);
-  const [pendingExtraRadius, setPendingExtraRadius] = useState(extraRadius);
+  const [pendingExtraRadius, setPendingExtraRadius] = useState("");
   const { toast } = useToast();
 
   // Verifica o status da geolocalização
@@ -221,16 +221,24 @@ const Match = () => {
             hasLocation: !!coords
           };
         });
-      // Perfis com localização dentro do raio
+      // Perfis com localização válida dentro do raio
       let inRadius = filtered.filter(p => p.hasLocation && p.distance <= radius);
       // Perfis sem localização
       let noLocation = filtered.filter(p => !p.hasLocation);
-      // Se não houver perfis e switch ativado, buscar até o extraRadius
+      // Perfis com localização válida fora do raio
+      let outRadius = filtered.filter(p => p.hasLocation && p.distance > radius);
+      // Se não houver perfis dentro do raio e switch ativado, buscar até o extraRadius
       if (inRadius.length === 0 && showFarProfiles) {
         inRadius = filtered.filter(p => p.hasLocation && p.distance <= extraRadius);
+        outRadius = filtered.filter(p => p.hasLocation && p.distance > extraRadius);
       }
-      // Juntar perfis com localização (dentro do raio) e sem localização (no final)
-      setProfiles([...inRadius, ...noLocation]);
+      // Se não houver nenhum perfil com localização, mostrar todos os perfis reais (exceto o próprio)
+      if (inRadius.length === 0 && noLocation.length > 0) {
+        setProfiles([...noLocation]);
+      } else {
+        // Juntar perfis com localização (dentro do raio), depois sem localização, depois fora do raio
+        setProfiles([...inRadius, ...noLocation, ...outRadius]);
+      }
       setCurrent(0);
     }
     fetchProfiles();
@@ -407,16 +415,17 @@ const Match = () => {
                   type="number"
                   min={radius + 1}
                   value={pendingExtraRadius}
-                  onChange={e => setPendingExtraRadius(Number(e.target.value))}
+                  onChange={e => setPendingExtraRadius(e.target.value)}
                   className="w-24 px-2 py-1 border rounded text-right font-semibold text-primary text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   style={{ MozAppearance: 'textfield' }}
+                  placeholder="km"
                 />
                 <span className="ml-2 text-primary text-sm">km</span>
                 <Button
                   size="sm"
                   className="ml-2"
-                  onClick={() => setExtraRadius(pendingExtraRadius)}
-                  disabled={pendingExtraRadius < radius + 1}
+                  onClick={() => setExtraRadius(Number(pendingExtraRadius))}
+                  disabled={pendingExtraRadius === "" || isNaN(Number(pendingExtraRadius)) || Number(pendingExtraRadius) < radius + 1}
                 >
                   Confirmar
                 </Button>
