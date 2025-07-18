@@ -235,6 +235,9 @@ const Match = () => {
       // Se não houver nenhum perfil com localização, mostrar todos os perfis reais (exceto o próprio)
       if (inRadius.length === 0 && noLocation.length > 0) {
         setProfiles([...noLocation]);
+      } else if (inRadius.length === 0 && noLocation.length === 0 && filtered.length > 0) {
+        // Se não há ninguém com localização, mas há perfis reais, mostra todos
+        setProfiles(filtered);
       } else {
         // Juntar perfis com localização (dentro do raio), depois sem localização, depois fora do raio
         setProfiles([...inRadius, ...noLocation, ...outRadius]);
@@ -393,7 +396,7 @@ const Match = () => {
           <input
             type="range"
             min={1}
-            max={100}
+            max={1000}
             step={1}
             value={radius}
             onChange={e => setRadius(Number(e.target.value))}
@@ -414,6 +417,7 @@ const Match = () => {
                 <input
                   type="number"
                   min={radius + 1}
+                  max={1000}
                   value={pendingExtraRadius}
                   onChange={e => setPendingExtraRadius(e.target.value)}
                   className="w-24 px-2 py-1 border rounded text-right font-semibold text-primary text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
