@@ -82,6 +82,7 @@ const Match = () => {
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [showFarProfiles, setShowFarProfiles] = useState(false);
   const [extraRadius, setExtraRadius] = useState(50);
+  const [pendingExtraRadius, setPendingExtraRadius] = useState(extraRadius);
   const { toast } = useToast();
 
   // Verifica o status da geolocalização
@@ -177,12 +178,63 @@ const Match = () => {
     );
   };
 
-  // Busca perfis próximos (mock)
+  // Função para calcular distância entre dois pontos (Haversine)
+  function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      0.5 - Math.cos(dLat)/2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      (1 - Math.cos(dLon))/2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  // Buscar perfis reais do Supabase e filtrar por distância
   useEffect(() => {
-    if (!location) return;
-    setProfiles(mockProfiles.filter(u => u.distance <= radius));
-    setCurrent(0);
-  }, [location, radius]);
+    async function fetchProfiles() {
+      if (!location) return;
+      let { data: profilesData, error } = await supabase.from('profiles').select('*');
+      if (error) {
+        toast({ title: 'Erro ao buscar perfis', description: error.message, variant: 'destructive' });
+        return;
+      }
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      // Suporte a location como string "lat,lng" ou objeto {lat, lng}
+      function parseLatLng(profile) {
+        if (profile.location && typeof profile.location === 'string' && profile.location.includes(',')) {
+          const [lat, lng] = profile.location.split(',').map(Number);
+          if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+        }
+        if (profile.location_lat && profile.location_lng) {
+          return { lat: Number(profile.location_lat), lng: Number(profile.location_lng) };
+        }
+        return null;
+      }
+      let filtered = profilesData
+        .filter(p => p.id && p.id !== userId)
+        .map(p => {
+          const coords = parseLatLng(p);
+          return {
+            ...p,
+            distance: coords ? getDistanceFromLatLonInKm(location.lat, location.lng, coords.lat, coords.lng) : null,
+            hasLocation: !!coords
+          };
+        });
+      // Perfis com localização dentro do raio
+      let inRadius = filtered.filter(p => p.hasLocation && p.distance <= radius);
+      // Perfis sem localização
+      let noLocation = filtered.filter(p => !p.hasLocation);
+      // Se não houver perfis e switch ativado, buscar até o extraRadius
+      if (inRadius.length === 0 && showFarProfiles) {
+        inRadius = filtered.filter(p => p.hasLocation && p.distance <= extraRadius);
+      }
+      // Juntar perfis com localização (dentro do raio) e sem localização (no final)
+      setProfiles([...inRadius, ...noLocation]);
+      setCurrent(0);
+    }
+    fetchProfiles();
+  }, [location, radius, showFarProfiles, extraRadius]);
 
   const handleMatch = () => {
     toast({ title: "Bora treinar!", description: `Você demonstrou interesse em treinar com ${profile.name}.` });
@@ -255,6 +307,9 @@ const Match = () => {
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-bold text-lg truncate max-w-[180px]">{profile.name}</span>
                 <span className="text-lg text-muted-foreground">{profile.age}</span>
+                {!profile.hasLocation && (
+                  <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">Sem localização</span>
+                )}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <span>🏠 {profile.location}</span>
@@ -351,13 +406,20 @@ const Match = () => {
                 <input
                   type="number"
                   min={radius + 1}
-                  max={200}
-                  value={extraRadius}
-                  onChange={e => setExtraRadius(Number(e.target.value))}
+                  value={pendingExtraRadius}
+                  onChange={e => setPendingExtraRadius(Number(e.target.value))}
                   className="w-24 px-2 py-1 border rounded text-right font-semibold text-primary text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   style={{ MozAppearance: 'textfield' }}
                 />
                 <span className="ml-2 text-primary text-sm">km</span>
+                <Button
+                  size="sm"
+                  className="ml-2"
+                  onClick={() => setExtraRadius(pendingExtraRadius)}
+                  disabled={pendingExtraRadius < radius + 1}
+                >
+                  Confirmar
+                </Button>
               </div>
             </div>
           )}
