@@ -78,25 +78,99 @@ const Match = () => {
   const [loading, setLoading] = useState(false);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const { toast } = useToast();
+
+  // Verifica o status da geolocalização
+  const checkGeolocationStatus = () => {
+    if (!navigator.geolocation) {
+      toast({ 
+        title: "Navegador não suportado", 
+        description: "Seu navegador não suporta geolocalização.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Verifica se a permissão já foi concedida
+    if ('permissions' in navigator) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'denied') {
+          setPermissionDenied(true);
+        }
+      });
+    }
+  };
+
+  // Verifica status da geolocalização ao carregar a página
+  useEffect(() => {
+    checkGeolocationStatus();
+  }, []);
+
+  // Função para usar localização padrão (Rio de Janeiro)
+  const useDefaultLocation = () => {
+    setLocation({ lat: -22.9068, lng: -43.1729 }); // Coordenadas do Rio de Janeiro
+    toast({ 
+      title: "Localização definida", 
+      description: "Usando localização padrão (Rio de Janeiro)." 
+    });
+  };
 
   // Solicita localização do usuário
   const requestLocation = () => {
     if (!navigator.geolocation) {
-      toast({ title: "Erro", description: "Geolocalização não suportada.", variant: "destructive" });
+      toast({ 
+        title: "Erro", 
+        description: "Geolocalização não suportada pelo seu navegador.", 
+        variant: "destructive" 
+      });
       return;
     }
+    
     setLoading(true);
+    
+    // Configurações para melhor precisão
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000, // 10 segundos
+      maximumAge: 300000 // 5 minutos
+    };
+    
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLoading(false);
-        toast({ title: "Localização obtida!", description: "Agora você pode encontrar parceiros próximos." });
+        toast({ 
+          title: "Localização obtida!", 
+          description: "Agora você pode encontrar parceiros próximos." 
+        });
       },
       (err) => {
         setLoading(false);
-        toast({ title: "Erro ao obter localização", description: err.message, variant: "destructive" });
-      }
+        let errorMessage = "Erro ao obter localização";
+        
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            errorMessage = "Permissão de localização negada. Por favor, permita o acesso à localização nas configurações do seu navegador.";
+            setPermissionDenied(true);
+            break;
+          case err.POSITION_UNAVAILABLE:
+            errorMessage = "Informação de localização indisponível. Verifique se o GPS está ativado.";
+            break;
+          case err.TIMEOUT:
+            errorMessage = "Tempo limite excedido. Verifique sua conexão com a internet.";
+            break;
+          default:
+            errorMessage = "Erro desconhecido ao obter localização.";
+        }
+        
+        toast({ 
+          title: "Erro ao obter localização", 
+          description: errorMessage, 
+          variant: "destructive" 
+        });
+      },
+      options
     );
   };
 
@@ -121,9 +195,44 @@ const Match = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       <div className="w-full max-w-sm">
         {!location ? (
-          <Button onClick={requestLocation} disabled={loading} className="mb-4 w-full">
-            {loading ? "Obtendo localização..." : "Permitir Localização"}
-          </Button>
+          permissionDenied ? (
+            <div className="text-center space-y-4">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <h3 className="font-semibold text-destructive mb-2">Permissão de Localização Negada</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Para encontrar parceiros próximos, precisamos da sua localização.
+                </p>
+                <div className="text-left text-sm space-y-2">
+                  <p><strong>Como permitir:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>Toque no ícone de localização na barra de endereços</li>
+                    <li>Selecione "Permitir" ou "Permitir sempre"</li>
+                    <li>Ou vá em Configurações do navegador → Privacidade → Localização</li>
+                  </ul>
+                </div>
+              </div>
+              <Button 
+                onClick={() => {
+                  setPermissionDenied(false);
+                  requestLocation();
+                }} 
+                className="w-full"
+              >
+                Tentar Novamente
+              </Button>
+              <Button 
+                onClick={useDefaultLocation} 
+                variant="outline" 
+                className="w-full"
+              >
+                Usar Localização Padrão
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={requestLocation} disabled={loading} className="mb-4 w-full">
+              {loading ? "Obtendo localização..." : "Permitir Localização"}
+            </Button>
+          )
         ) : profiles.length === 0 ? (
           <div className="text-center mt-12 text-muted-foreground">Nenhum parceiro encontrado nesse raio.</div>
         ) : profile ? (
