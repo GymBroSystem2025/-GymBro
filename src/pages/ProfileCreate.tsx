@@ -34,6 +34,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
     lookingFor: initialData?.lookingFor || "both",
     experience: initialData?.experience_level || "",
   });
+  const [location, setLocation] = useState<string>("");
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -167,6 +168,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
           images: uploadedUrls,
           avatar_url: uploadedUrls[0] || null,
           updated_at: new Date().toISOString(),
+          location: location,
         }).eq("id", user.id);
         if (updateError) throw updateError;
         toast({
@@ -190,6 +192,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
           images: uploadedUrls,
           avatar_url: uploadedUrls[0] || null,
           updated_at: new Date().toISOString(),
+          location: location,
         });
         if (insertError) throw insertError;
         toast({
@@ -240,9 +243,7 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                           <User className="h-8 w-8" />
                         </AvatarFallback>
                       </Avatar>
-                      {idx === 0 && (
-                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-0.5 rounded shadow font-semibold z-10">Foto principal</span>
-                      )}
+                      {/* Removido o texto 'Foto principal' */}
                       <button
                         type="button"
                         className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity z-10"
@@ -298,6 +299,43 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                     disabled={isLoading || !isReady}
                   />
                 </div>
+              </div>
+
+              {/* Localização */}
+              <div className="space-y-2">
+                <Label>Localização *</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="text"
+                    placeholder="Clique em 'Usar minha localização'"
+                    value={location}
+                    onChange={e => setLocation(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (!navigator.geolocation) {
+                        toast({ title: "Erro", description: "Geolocalização não suportada.", variant: "destructive" });
+                        return;
+                      }
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setLocation(`${pos.coords.latitude},${pos.coords.longitude}`);
+                          toast({ title: "Localização capturada!", description: "Sua localização foi preenchida automaticamente." });
+                        },
+                        (err) => {
+                          toast({ title: "Erro ao obter localização", description: err.message, variant: "destructive" });
+                        }
+                      );
+                    }}
+                    disabled={isLoading}
+                  >
+                    Usar minha localização
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Sua localização é usada apenas para encontrar parceiros próximos.</p>
               </div>
 
               {/* Bio */}
@@ -366,6 +404,19 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
               {/* Dias Disponíveis */}
               <div className="space-y-3">
                 <Label>Dias Disponíveis</Label>
+                <div className="mb-2">
+                  <Checkbox
+                    id="all-days"
+                    checked={formData.availableDays.length === weekDays.length}
+                    onCheckedChange={(checked) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        availableDays: checked ? [...weekDays] : []
+                      }));
+                    }}
+                  />
+                  <Label htmlFor="all-days" className="ml-2 text-sm cursor-pointer font-semibold">Selecionar todos</Label>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {weekDays.map((day) => (
                     <div key={day} className="flex items-center space-x-2">
