@@ -348,17 +348,17 @@ const Match = () => {
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="block font-semibold text-sm">Novo limite de distância</span>
-                <span className="font-semibold text-primary text-sm">{extraRadius} km</span>
+                <input
+                  type="number"
+                  min={radius + 1}
+                  max={200}
+                  value={extraRadius}
+                  onChange={e => setExtraRadius(Number(e.target.value))}
+                  className="w-24 px-2 py-1 border rounded text-right font-semibold text-primary text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{ MozAppearance: 'textfield' }}
+                />
+                <span className="ml-2 text-primary text-sm">km</span>
               </div>
-              <input
-                type="range"
-                min={radius + 1}
-                max={200}
-                step={1}
-                value={extraRadius}
-                onChange={e => setExtraRadius(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
             </div>
           )}
         </div>
