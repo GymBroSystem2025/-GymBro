@@ -234,12 +234,15 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                 <div className="flex gap-2 flex-wrap justify-center">
                   {profileImages.map((img, idx) => (
                     <div key={idx} className="relative group">
-                      <Avatar className="w-20 h-20">
+                      <Avatar className="w-20 h-20 ring-2 ring-primary/60">
                         <AvatarImage src={img} />
                         <AvatarFallback className="bg-primary/10 text-primary text-2xl">
                           <User className="h-8 w-8" />
                         </AvatarFallback>
                       </Avatar>
+                      {idx === 0 && (
+                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-2 py-0.5 rounded shadow font-semibold z-10">Foto principal</span>
+                      )}
                       <button
                         type="button"
                         className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity z-10"
@@ -254,18 +257,20 @@ const ProfileCreate = ({ initialData, isEditMode }: ProfileCreateProps) => {
                     <Button asChild variant="outline" size="sm" className="flex items-center gap-2 h-20 w-20 justify-center">
                       <label htmlFor="image-upload" className="cursor-pointer m-0 flex flex-col items-center justify-center w-full h-full">
                         <Upload className="h-6 w-6 mb-1" />
-                        <span className="text-xs">Adicionar</span>
+                        <span className="text-xs font-semibold">Adicionar fotos</span>
+                        <span className="text-[10px] text-muted-foreground mt-1">até 5</span>
                       </label>
                     </Button>
                   )}
                 </div>
-                <Input
+                <input
                   id="image-upload"
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleImageUpload}
                   className="hidden"
+                  disabled={profileImages.length >= 5}
                 />
               </div>
 

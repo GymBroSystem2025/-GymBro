@@ -81,6 +81,7 @@ const Match = () => {
   const [current, setCurrent] = useState(0);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [showFarProfiles, setShowFarProfiles] = useState(false);
+  const [extraRadius, setExtraRadius] = useState(50);
   const { toast } = useToast();
 
   // Verifica o status da geolocalização
@@ -343,6 +344,23 @@ const Match = () => {
               aria-label="Mostrar pessoas mais longe"
             />
           </div>
+          {showFarProfiles && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="block font-semibold text-sm">Novo limite de distância</span>
+                <span className="font-semibold text-primary text-sm">{extraRadius} km</span>
+              </div>
+              <input
+                type="range"
+                min={radius + 1}
+                max={200}
+                step={1}
+                value={extraRadius}
+                onChange={e => setExtraRadius(Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
