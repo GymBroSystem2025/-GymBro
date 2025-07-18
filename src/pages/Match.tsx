@@ -193,13 +193,21 @@ const Match = () => {
   // Buscar perfis reais do Supabase e filtrar por distância
   useEffect(() => {
     async function fetchProfiles() {
-      if (!location) return;
+      let userId = null;
+      try {
+        userId = (await supabase.auth.getUser()).data.user?.id;
+      } catch {}
       let { data: profilesData, error } = await supabase.from('profiles').select('*');
       if (error) {
         toast({ title: 'Erro ao buscar perfis', description: error.message, variant: 'destructive' });
         return;
       }
-      const userId = (await supabase.auth.getUser()).data.user?.id;
+      // Se não houver localização, mostrar todos os perfis reais (exceto o próprio)
+      if (!location) {
+        setProfiles(profilesData.filter(p => p.id && p.id !== userId));
+        setCurrent(0);
+        return;
+      }
       // Suporte a location como string "lat,lng" ou objeto {lat, lng}
       function parseLatLng(profile) {
         if (profile.location && typeof profile.location === 'string' && profile.location.includes(',')) {
@@ -260,6 +268,11 @@ const Match = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       <div className="w-full max-w-sm">
+        {!location && (
+          <div className="mb-4 text-center text-yellow-700 bg-yellow-100 border border-yellow-300 rounded p-2 text-sm">
+            Não foi possível obter sua localização. Mostrando todos os perfis disponíveis.
+          </div>
+        )}
         {!location ? (
           permissionDenied ? (
             <div className="text-center space-y-4">

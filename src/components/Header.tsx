@@ -43,15 +43,17 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <img
-            src="/logo.png"
-            alt="GymBro Logo"
-            className="w-10 h-10 object-contain bg-white rounded mr-2"
-          />
-          <span className="text-xl font-bold text-gradient">GymBro</span>
-        </Link>
+      <div className="container flex flex-col md:flex-row h-auto md:h-16 items-center md:justify-between gap-2 md:gap-0 py-2 md:py-0">
+        <div className="flex items-center space-x-2 w-full md:w-auto justify-center md:justify-start">
+          <Link to="/" className="flex items-center space-x-2">
+            <img
+              src="/logo.png"
+              alt="GymBro Logo"
+              className="w-10 h-10 object-contain bg-white rounded mr-2"
+            />
+            <span className="text-xl font-bold text-gradient">GymBro</span>
+          </Link>
+        </div>
 
         <nav className="hidden md:flex items-center space-x-6">
           <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
@@ -68,11 +70,11 @@ export function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 w-full md:w-auto justify-center md:justify-end">
           <ThemeToggle />
           {user ? (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">
+            <div className="flex flex-col md:flex-row items-center gap-2">
+              <span className="text-sm font-medium truncate max-w-[120px] md:max-w-none">
                 {profile?.full_name || profile?.name || user.email}
               </span>
               <Link to="/profile/edit">
