@@ -8,20 +8,59 @@ import { Mail, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CheckCircle } from "lucide-react";
 
 const Auth = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [cref, setCref] = useState("");
-  const [isPersonalLoading, setIsPersonalLoading] = useState(false);
-  const [crefStatus, setCrefStatus] = useState<string|null>(null);
-  const crefInputRef = useRef<HTMLInputElement>(null);
   const [nickname, setNickname] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPersonalLoading, setIsPersonalLoading] = useState(false);
+  const [cref, setCref] = useState("");
+  const [crefStatus, setCrefStatus] = useState<"idle" | "validando" | "ativo" | "invalido" | "erro">("idle");
+  const [showEmailConfirmationDialog, setShowEmailConfirmationDialog] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const crefInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Função para reenviar e-mail de confirmação
+  const resendConfirmationEmail = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: userEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "E-mail reenviado!",
+        description: "Verifique sua caixa de entrada novamente.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao reenviar e-mail",
+        description: error.message || "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Verificar se o usuário já está logado
   useEffect(() => {
@@ -152,17 +191,22 @@ const Auth = () => {
 
       if (data.user) {
         console.log('Usuário criado com sucesso:', data.user);
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar a conta",
-        });
-        navigate("/profile/create");
+        setUserEmail(email);
+        setShowEmailConfirmationDialog(true);
+        // Limpar formulário
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setNickname("");
       } else {
         console.log('Nenhum usuário retornado');
-        toast({
-          title: "Aviso",
-          description: "Verifique seu email para confirmar a conta",
-        });
+        setUserEmail(email);
+        setShowEmailConfirmationDialog(true);
+        // Limpar formulário
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setNickname("");
       }
     } catch (error: any) {
       console.error('Erro completo:', error);
@@ -247,11 +291,14 @@ const Auth = () => {
       });
       if (error) throw error;
       if (data.user) {
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar a conta",
-        });
-        navigate("/profile/create");
+        setUserEmail(email);
+        setShowEmailConfirmationDialog(true);
+        // Limpar formulário
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setNickname("");
+        setCref("");
       }
     } catch (error: any) {
       toast({
@@ -473,6 +520,68 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Dialog de Confirmação de E-mail */}
+      <Dialog open={showEmailConfirmationDialog} onOpenChange={setShowEmailConfirmationDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              Conta criada com sucesso!
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              <div className="space-y-4">
+                <p>
+                  Enviamos um e-mail de confirmação para: <strong>{userEmail}</strong>
+                </p>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2">📧 E-mail de Confirmação</h4>
+                  <p className="text-sm text-blue-700 mb-2">
+                    <strong>Remetente:</strong> noreply@sjwcpjfcpjeljosrkrfi.supabase.co
+                  </p>
+                  <p className="text-sm text-blue-700 mb-2">
+                    <strong>Assunto:</strong> "Confirme seu e-mail para GymBro"
+                  </p>
+                </div>
+                
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Não encontrou o e-mail?</h4>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    <li>• Verifique sua <strong>caixa de spam</strong></li>
+                    <li>• Verifique sua <strong>lixeira</strong></li>
+                    <li>• Aguarde alguns minutos (pode demorar até 5 minutos)</li>
+                    <li>• Verifique se digitou o e-mail corretamente</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-green-800 mb-2">✅ Próximos Passos</h4>
+                  <ol className="text-sm text-green-700 space-y-1">
+                    <li>1. Abra o e-mail de confirmação</li>
+                    <li>2. Clique no botão "Confirmar e-mail"</li>
+                    <li>3. Você será redirecionado para completar seu perfil</li>
+                  </ol>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEmailConfirmationDialog(false)}
+            >
+              Entendi
+            </Button>
+            <Button
+              onClick={resendConfirmationEmail}
+            >
+              Reenviar E-mail
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

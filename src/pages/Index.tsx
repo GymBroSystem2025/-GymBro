@@ -128,12 +128,12 @@ const Index = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center card-glow group">
+              <Card key={index} className="text-center card-hover group">
                 <CardHeader className="pb-6">
                   <div className="mx-auto mb-6 w-20 h-20 bg-gradient-to-br from-fitness-primary/20 to-fitness-secondary/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     {feature.icon}
                   </div>
-                  <CardTitle className="text-2xl mb-3">{feature.title}</CardTitle>
+                  <CardTitle className="text-2xl mb-3 text-foreground">{feature.title}</CardTitle>
                   <CardDescription className="text-muted-foreground text-base leading-relaxed">
                     {feature.description}
                   </CardDescription>
@@ -155,11 +155,11 @@ const Index = () => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto">
             {objectives.map((objective, index) => (
-              <Card key={index} className="p-6 card-glow group cursor-pointer">
+              <Card key={index} className="p-6 objective-card group cursor-pointer">
                 <div className="w-12 h-12 bg-gradient-to-br from-fitness-primary/20 to-fitness-secondary/20 rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Dumbbell className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-sm">{objective}</h3>
+                <h3 className="font-semibold text-sm text-foreground">{objective}</h3>
               </Card>
             ))}
           </div>

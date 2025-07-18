@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useRequireEmailConfirmed } from "@/hooks/useRequireEmailConfirmed";
+import { Switch } from "@/components/ui/switch";
 
 const DEFAULT_RADIUS = 5; // km
 
@@ -79,6 +80,7 @@ const Match = () => {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [showFarProfiles, setShowFarProfiles] = useState(false);
   const { toast } = useToast();
 
   // Verifica o status da geolocalização
@@ -317,18 +319,30 @@ const Match = () => {
         )}
       </div>
       {location && (
-        <div className="flex items-center gap-2 mt-6">
-          <span>Raio:</span>
+        <div className="w-full max-w-md mx-auto mt-8 p-6 bg-card rounded-xl shadow flex flex-col gap-4 border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <span className="block font-semibold text-lg">Distância máxima</span>
+            </div>
+            <span className="font-semibold text-primary text-lg">{radius} km</span>
+          </div>
           <input
             type="range"
             min={1}
-            max={20}
+            max={100}
             step={1}
             value={radius}
             onChange={e => setRadius(Number(e.target.value))}
-            className="w-40"
+            className="w-full accent-primary"
           />
-          <span>{radius} km</span>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm text-muted-foreground">Mostrar pessoas mais longe de mim se eu ficar sem perfis pra ver.</span>
+            <Switch
+              checked={showFarProfiles}
+              onCheckedChange={setShowFarProfiles}
+              aria-label="Mostrar pessoas mais longe"
+            />
+          </div>
         </div>
       )}
     </div>

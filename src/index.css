@@ -103,12 +103,14 @@ div[style*="Edit with Lovable"],
   }
   
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-2 border-fitness-primary/30 bg-white/90 backdrop-blur-lg;
+    @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-2 border-fitness-primary/30 backdrop-blur-lg;
+    background: hsl(var(--card) / 0.9);
   }
   .card-glow {
     box-shadow: 0 0 24px 0 hsl(var(--fitness-glow) / 0.5), 0 2px 16px 0 hsl(var(--fitness-primary) / 0.15);
     border: 2px solid hsl(var(--fitness-primary) / 0.2);
-    background: linear-gradient(135deg, #fff 80%, hsl(var(--fitness-primary) / 0.08));
+    background: linear-gradient(135deg, hsl(var(--card)) 80%, hsl(var(--fitness-primary) / 0.08));
+    backdrop-filter: blur(10px);
   }
   .section-dark {
     background: linear-gradient(135deg, hsl(var(--fitness-dark)), hsl(var(--fitness-primary) / 0.7));
@@ -120,5 +122,23 @@ div[style*="Edit with Lovable"],
   }
   .glow {
     text-shadow: 0 0 8px hsl(var(--fitness-primary) / 0.7), 0 2px 8px hsl(var(--fitness-secondary) / 0.3);
+  }
+  
+  .objective-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 4px 12px 0 hsl(var(--fitness-primary) / 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .objective-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px 0 hsl(var(--fitness-primary) / 0.2);
+    border-color: hsl(var(--fitness-primary) / 0.3);
+  }
+  
+  .dark .objective-card {
+    background: hsl(var(--card));
+    border-color: hsl(var(--border));
   }
 }
